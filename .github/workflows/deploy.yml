@@ -1,0 +1,56 @@
+name: Secure GitHub Pages Deploy
+
+on:
+  push:
+    branches:
+      - main  # Only trigger on your default branch
+  workflow_dispatch: # Allows manual triggering from the Actions tab
+
+# Set safe, explicit permissions for the default GITHUB_TOKEN
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment to prevent race conditions or cross-build contamination
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Secret Scanning
+      uses: trufflesecurity/trufflehog@main
+      with:
+        extra_args: --results=verified,unknown
+deploy:
+    needs: test # Enforces that secret scanning must pass first
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source
+        uses: actions/checkout@v4
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      # If you have a build step (e.g., Hugo, Jekyll, npm run build), insert it here.
+      # For a raw static site, we skip building and directly upload the root folder.
+
+      - name: Upload Artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: '.' # Adjust this if your static files are generated in a subfolder (e.g., './dist')
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+

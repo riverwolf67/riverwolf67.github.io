@@ -1,0 +1,46 @@
+# ==========================================
+# 🐍 Python & Modern Package Management (uv)
+# ==========================================
+# Exclude the modern uv environment directory
+.venv/
+.uv/
+
+# Legacy python environments and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+
+# ==========================================
+# 🛠️ Editor & IDE Customizations
+# ==========================================
+# VS Code / Vscodium workspace states
+.vscode/
+!.vscode/extensions.json
+.history/
+
+# JetBrains / Vim backups
+.idea/
+*.swp
+*~
+
+# ==========================================
+# 🔒 Local Security & Secrets (Backup Safeguard)
+# ==========================================
+# Keep all API keys, local tokens, and environment overrides out of git
+.env
+.env.local
+.env.*.local
+*.pem
+*.key
+*.secret
+
+# ==========================================
+# 📦 System, Caches & OS Artifacts
+# ==========================================
+# Linux / Thumbnail caches
+.DS_Store
+Thumbs.db
+.direnv/
+.cache/
