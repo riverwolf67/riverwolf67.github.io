@@ -29,8 +29,9 @@ jobs:
       uses: trufflesecurity/trufflehog@main
       with:
         extra_args: --results=verified,unknown
-deploy:
-    needs: test # Enforces that secret scanning must pass first
+
+  deploy:
+    needs: test  # <--- Ensure this has exactly 2 spaces of indentation
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
@@ -42,15 +43,11 @@ deploy:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # If you have a build step (e.g., Hugo, Jekyll, npm run build), insert it here.
-      # For a raw static site, we skip building and directly upload the root folder.
-
       - name: Upload Artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.' # Adjust this if your static files are generated in a subfolder (e.g., './dist')
+          path: '.'
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-
