@@ -6,6 +6,10 @@ on:
       - main
   workflow_dispatch:
 
+# Force the GitHub runner engine to execute actions using Node.js 24
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # Set safe, explicit permissions for the default GITHUB_TOKEN
 permissions:
   contents: read
