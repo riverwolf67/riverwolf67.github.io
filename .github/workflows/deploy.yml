@@ -6,6 +6,10 @@ on:
       - main  # Only trigger on your default branch
   workflow_dispatch: # Allows manual triggering from the Actions tab
 
+# Force the GitHub runner engine to execute actions using Node.js 24
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 # Set safe, explicit permissions for the default GITHUB_TOKEN
 permissions:
   contents: read
@@ -31,23 +35,23 @@ jobs:
         extra_args: --results=verified,unknown
 
   deploy:
-    needs: test  # <--- Ensure this has exactly 2 spaces of indentation
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Source
-        uses: actions/checkout@v4
-
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Upload Artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: '.'
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      needs: test
+      environment:
+        name: github-pages
+        url: ${{ steps.deployment.outputs.page_url }}
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout Source
+          uses: actions/checkout@v4
+  
+        - name: Setup Pages
+          uses: actions/configure-pages@v5
+  
+        - name: Upload Artifact
+          uses: actions/upload-pages-artifact@v3
+          with:
+            path: '.'
+  
+        - name: Deploy to GitHub Pages
+          id: deployment
+          uses: actions/deploy-pages@v4
