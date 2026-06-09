@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>riverwolf67</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+
+  :root {
+    --green: #00ff41;
+    --green-dim: #00cc33;
+    --green-dark: #003300;
+    --green-glow: rgba(0,255,65,0.15);
+    --bg: #000000;
+    --scanline: rgba(0,255,65,0.03);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    width: 100%; height: 100%;
+    background: var(--bg);
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    overflow: hidden;
+    cursor: crosshair;
+  }
+
+  /* CRT scanlines overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      var(--scanline) 2px,
+      var(--scanline) 4px
+    );
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* Vignette */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,0.8) 100%);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  #canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Resume link */
+  #resume-link {
+    position: fixed;
+    bottom: 2rem;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 500;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--green-dim);
+    text-decoration: none;
+    letter-spacing: 0.3em;
+    text-transform: uppercase;
+    border: 1px solid var(--green-dark);
+    padding: 0.5rem 1.5rem;
+    transition: all 0.3s ease;
+    opacity: 0.6;
+  }
+  #resume-link:hover {
+    color: var(--green);
+    border-color: var(--green);
+    box-shadow: 0 0 12px var(--green-glow), inset 0 0 12px var(--green-glow);
+    opacity: 1;
+  }
+
+  /* Instructions */
+  #hint {
+    position: fixed;
+    top: 1.5rem;
+    right: 1.5rem;
+    z-index: 500;
+    font-size: 0.65rem;
+    color: var(--green-dark);
+    letter-spacing: 0.1em;
+    line-height: 1.8;
+    text-align: right;
+    opacity: 0.7;
+  }
+
+  /* Handle */
+  #handle {
+    position: fixed;
+    top: 1.5rem;
+    left: 1.5rem;
+    z-index: 500;
+    font-family: 'VT323', monospace;
+    font-size: 1.4rem;
+    color: var(--green-dim);
+    letter-spacing: 0.2em;
+    opacity: 0.5;
+  }
+
+  /* Game overlay layer */
+  #game-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.8s ease;
+    font-family: 'VT323', monospace;
+  }
+
+  #game-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+  }
+</style>
+</head>
+<body>
+
+<div id="handle">riverwolf67</div>
+<div id="hint">
+  scroll · zoom<br>
+  drag · rotate
+</div>
+
+<canvas id="canvas"></canvas>
+
+<div id="game-layer">
+  <canvas id="game-canvas"></canvas>
+</div>
+
+<a href="resume.html" id="resume-link">[ resume ]</a>
+
+<script>
+// ============================================================
+// CONSTANTS & STATE
+// ============================================================
+const GREEN = '#00ff41';
+const GREEN_DIM = '#00cc33';
+const GREEN_DARK = '#003311';
+const BG = '#000000';
+
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const gameLayer = document.getElementById('game-layer');
+const gameCanvas = document.getElementById('game-canvas');
+const gctx = gameCanvas.getContext('2d');
+
+let W, H, cx, cy;
+
+function resize() {
+  W = canvas.width = gameCanvas.width = window.innerWidth;
+  H = canvas.height = gameCanvas.height = window.innerHeight;
+  cx = W / 2; cy = H / 2;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// ============================================================
+// 3D CUBE
+// ============================================================
+let cubeSize = 80;
+let rotX = 0.4, rotY = 0.6, rotZ = 0;
+let spinX = 0.003, spinY = 0.007, spinZ = 0.001;
+let scale = 1;
+
+// Mouse interaction
+let isDragging = false;
+let lastMX = 0, lastMY = 0;
+
+canvas.addEventListener('mousedown', e => {
+  isDragging = true;
+  lastMX = e.clientX; lastMY = e.clientY;
+});
+window.addEventListener('mouseup', () => isDragging = false);
+window.addEventListener('mousemove', e => {
+  if (!isDragging) return;
+  const dx = e.clientX - lastMX;
+  const dy = e.clientY - lastMY;
+  rotY += dx * 0.01;
+  rotX += dy * 0.01;
+  lastMX = e.clientX; lastMY = e.clientY;
+});
+canvas.addEventListener('wheel', e => {
+  scale -= e.deltaY * 0.001;
+  scale = Math.max(0.3, Math.min(3, scale));
+}, { passive: true });
+
+// Touch support
+canvas.addEventListener('touchstart', e => {
+  isDragging = true;
+  lastMX = e.touches[0].clientX;
+  lastMY = e.touches[0].clientY;
+}, { passive: true });
+window.addEventListener('touchend', () => isDragging = false);
+window.addEventListener('touchmove', e => {
+  if (!isDragging) return;
+  const dx = e.touches[0].clientX - lastMX;
+  const dy = e.touches[0].clientY - lastMY;
+  rotY += dx * 0.01;
+  rotX += dy * 0.01;
+  lastMX = e.touches[0].clientX;
+  lastMY = e.touches[0].clientY;
+}, { passive: true });
+
+function project([x, y, z]) {
+  const fov = 400;
+  const zOff = 600;
+  const s = fov / (zOff + z);
+  return [cx + x * s, cy + y * s, s];
+}
+
+function rotatePoint([x, y, z], rx, ry, rz) {
+  // rotate X
+  let [ny, nz] = [y * Math.cos(rx) - z * Math.sin(rx), y * Math.sin(rx) + z * Math.cos(rx)];
+  [y, z] = [ny, nz];
+  // rotate Y
+  let [nx, nz2] = [x * Math.cos(ry) + z * Math.sin(ry), -x * Math.sin(ry) + z * Math.cos(ry)];
+  [x, z] = [nx, nz2];
+  // rotate Z
+  let [nx2, ny2] = [x * Math.cos(rz) - y * Math.sin(rz), x * Math.sin(rz) + y * Math.cos(rz)];
+  return [nx2 * scale, ny2 * scale, z * scale];
+}
+
+function getCubeVertices(size) {
+  const h = size / 2;
+  return [
+    [-h,-h,-h],[h,-h,-h],[h,h,-h],[-h,h,-h],
+    [-h,-h, h],[h,-h, h],[h,h, h],[-h,h, h]
+  ];
+}
+
+const FACES = [
+  [0,1,2,3],[4,5,6,7],[0,1,5,4],
+  [2,3,7,6],[0,3,7,4],[1,2,6,5]
+];
+
+function drawCube(ox, oy, size, alpha = 1, color = GREEN) {
+  const verts = getCubeVertices(size).map(v => rotatePoint(v, rotX, rotY, rotZ));
+  const projected = verts.map(v => {
+    const fov = 400; const zOff = 600;
+    const s = fov / (zOff + v[2]);
+    return [ox + v[0] * s, oy + v[1] * s, v[2]];
+  });
+
+  // Sort faces by depth
+  const facesWithDepth = FACES.map(f => ({
+    f,
+    depth: f.reduce((sum, i) => sum + verts[i][2], 0) / 4
+  })).sort((a, b) => a.depth - b.depth);
+
+  facesWithDepth.forEach(({ f, depth }) => {
+    const pts = f.map(i => projected[i]);
+    // back-face check
+    const v0 = pts[0], v1 = pts[1], v2 = pts[2];
+    const cross = (v1[0]-v0[0])*(v2[1]-v0[1]) - (v1[1]-v0[1])*(v2[0]-v0[0]);
+    if (cross > 0) return;
+
+    const normalizedDepth = (depth + size) / (size * 2);
+    const brightness = 0.15 + normalizedDepth * 0.25;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.closePath();
+    ctx.fillStyle = `rgba(0, ${Math.floor(brightness * 255)}, ${Math.floor(brightness * 50)}, ${alpha * 0.3})`;
+    ctx.fill();
+    ctx.strokeStyle = `rgba(0, 255, 65, ${alpha * 0.8})`;
+    ctx.lineWidth = 1.2;
+    ctx.shadowColor = color;
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.restore();
+  });
+}
+
+// ============================================================
+// MATRIX RAIN
+// ============================================================
+const CHARS = 'アイウエオカキクケコサシスセソタチツテトナニヌネノ0123456789ABCDEF@#$%&{}[]<>';
+let matrixColumns = [];
+let matrixActive = false;
+
+function initMatrix() {
+  const colW = 16;
+  const cols = Math.floor(W / colW);
+  matrixColumns = Array.from({ length: cols }, (_, i) => ({
+    x: i * colW + 8,
+    y: Math.random() * -H,
+    speed: 2 + Math.random() * 4,
+    length: 8 + Math.floor(Math.random() * 20),
+    chars: []
+  }));
+}
+
+function drawMatrix(alpha) {
+  matrixColumns.forEach(col => {
+    col.y += col.speed;
+    if (col.y > H + col.length * 16) {
+      col.y = Math.random() * -200;
+      col.speed = 2 + Math.random() * 4;
+    }
+    for (let i = 0; i < col.length; i++) {
+      const y = col.y - i * 16;
+      if (y < 0 || y > H) continue;
+      const bright = (1 - i / col.length);
+      const a = bright * alpha;
+      ctx.save();
+      ctx.globalAlpha = a;
+      ctx.font = `14px 'Share Tech Mono'`;
+      ctx.fillStyle = i === 0 ? '#ffffff' : GREEN;
+      ctx.shadowColor = GREEN;
+      ctx.shadowBlur = i === 0 ? 12 : 4;
+      ctx.fillText(CHARS[Math.floor(Math.random() * CHARS.length)], col.x, y);
+      ctx.restore();
+    }
+  });
+}
+
+// ============================================================
+// GAME SEQUENCE
+// ============================================================
+const GAMES = [
+  { year: 1972, name: 'PONG',              type: 'pong' },
+  { year: 1978, name: 'SPACE INVADERS',    type: 'spaceinvaders' },
+  { year: 1980, name: 'PAC-MAN',           type: 'pacman' },
+  { year: 1985, name: 'SUPER MARIO BROS',  type: 'mario' },
+  { year: 1989, name: 'TETRIS',            type: 'tetris' },
+  { year: 1990, name: 'SUPER MARIO WORLD', type: 'smworld' },
+  { year: 1991, name: 'STREET FIGHTER II', type: 'sf2' },
+  { year: 1993, name: 'DOOM',              type: 'doom' },
+  { year: 1994, name: 'DONKEY KONG COUNTRY', type: 'dkc' },
+  { year: 1996, name: 'POKÉMON RED/BLUE',  type: 'pokemon' },
+  { year: 1997, name: 'FINAL FANTASY VII', type: 'ff7' },
+  { year: 1998, name: 'ZELDA: OOT',        type: 'zelda' },
+  { year: 1998, name: 'HALF-LIFE',         type: 'halflife' },
+  { year: 1999, name: 'GTA 2',             type: 'gta2' },
+];
+
+// ============================================================
+// SEQUENCE STATE MACHINE
+// ============================================================
+const SEQ = {
+  IDLE: 'idle',
+  MATRIX: 'matrix',
+  YEAR: 'year',
+  WARGAMES: 'wargames',
+  GAME: 'game',
+  FADE: 'fade',
+  DONE: 'done'
+};
+
+let state = SEQ.IDLE;
+let stateTimer = 0;
+let stateTarget = rand(5000, 12000);
+let seqPhase = -1; // which game we're on
+let fadeAlpha = 0;
+let fadeDir = 0;
+let yearDigits = '';
+let yearTarget = '';
+let wargamesLines = [];
+let wargamesTimer = 0;
+let gameAlpha = 0;
+let transitionAlpha = 0;
+
+// Pong state
+let pong = { ballX: 0, ballY: 0, ballVX: 3, ballVY: 2, p1Y: 0, p2Y: 0, score1: 0, score2: 0 };
+
+// Space Invaders state
+let invaders = { grid: [], bulletY: -1, bulletX: 0, alienBullets: [], t: 0 };
+
+// Pacman state
+let pacman = { x: 0, y: 0, angle: 0.2, dir: 1, dots: [], t: 0 };
+
+// Mario state
+let mario = { x: 0, jumpV: 0, jumpY: 0, t: 0, coins: [], onGround: true };
+
+// Tetris state
+let tetris = { board: [], piece: null, t: 0 };
+
+// Generic game state
+let genericGame = { t: 0 };
+
+function rand(a, b) { return a + Math.random() * (b - a); }
+function randInt(a, b) { return Math.floor(rand(a, b + 1)); }
+
+function initGame(type) {
+  const GCX = W / 2, GCY = H / 2;
+  if (type === 'pong') {
+    pong = { ballX: GCX, ballY: GCY, ballVX: 3.5, ballVY: 2.2, p1Y: GCY, p2Y: GCY };
+  } else if (type === 'spaceinvaders') {
+    invaders.grid = [];
+    for (let r = 0; r < 4; r++)
+      for (let c = 0; c < 10; c++)
+        invaders.grid.push({ x: W*0.15 + c*55, y: 60 + r*45, alive: Math.random() > 0.15 });
+    invaders.bulletY = -1; invaders.alienBullets = []; invaders.t = 0;
+  } else if (type === 'pacman') {
+    pacman.x = W*0.2; pacman.y = GCY; pacman.angle = 0.2; pacman.dir = 1;
+    pacman.dots = Array.from({length:18}, (_,i) => ({ x: W*0.15 + i*W*0.04, y: GCY, eaten: false }));
+    pacman.t = 0;
+  } else if (type === 'mario') {
+    mario.x = W*0.15; mario.jumpY = 0; mario.jumpV = 0; mario.onGround = true; mario.t = 0;
+    mario.coins = Array.from({length:6}, (_,i) => ({ x: W*0.2 + i*W*0.12, collected: false }));
+  } else if (type === 'tetris') {
+    tetris.board = Array.from({length:14}, () => Array(8).fill(0));
+    for (let r = 8; r < 14; r++) for (let c = 0; c < 8; c++) tetris.board[r][c] = Math.random() > 0.4 ? 1 : 0;
+    tetris.piece = { x: 3, y: 0, shape: [[1,1],[1,1]] };
+    tetris.t = 0;
+  } else {
+    genericGame.t = 0;
+  }
+}
+
+// ============================================================
+// DRAW GAMES
+// ============================================================
+function drawPong(alpha) {
+  const GW = W * 0.6, GH = H * 0.55;
+  const gx = W*0.2, gy = H*0.2;
+  const padH = 70, padW = 12;
+
+  // Update ball
+  pong.ballX += pong.ballVX;
+  pong.ballY += pong.ballVY;
+  if (pong.ballY < gy || pong.ballY > gy + GH) pong.ballVY *= -1;
+
+  // AI paddles
+  pong.p1Y += (pong.ballY - pong.p1Y) * 0.06;
+  pong.p2Y += (pong.ballY - pong.p2Y) * 0.06;
+  pong.p1Y = Math.max(gy + padH/2, Math.min(gy + GH - padH/2, pong.p1Y));
+  pong.p2Y = Math.max(gy + padH/2, Math.min(gy + GH - padH/2, pong.p2Y));
+
+  // Ball-paddle collision
+  if (pong.ballX < gx + padW + 14 && Math.abs(pong.ballY - pong.p1Y) < padH/2) { pong.ballVX = Math.abs(pong.ballVX); pong.ballVY += (Math.random()-0.5)*1.5; }
+  if (pong.ballX > gx + GW - padW - 14 && Math.abs(pong.ballY - pong.p2Y) < padH/2) { pong.ballVX = -Math.abs(pong.ballVX); pong.ballVY += (Math.random()-0.5)*1.5; }
+  if (pong.ballX < gx) { pong.ballX = gx+1; pong.ballVX = Math.abs(pong.ballVX); }
+  if (pong.ballX > gx + GW) { pong.ballX = gx+GW-1; pong.ballVX = -Math.abs(pong.ballVX); }
+
+  gctx.save();
+  gctx.globalAlpha = alpha;
+  gctx.strokeStyle = GREEN;
+  gctx.shadowColor = GREEN;
+  gctx.shadowBlur = 8;
+  gctx.lineWidth = 2;
+
+  // Border
+  gctx.strokeRect(gx, gy, GW, GH);
+
+  // Center line
+  gctx.setLineDash([8, 8]);
+  gctx.beginPath(); gctx.moveTo(gx+GW/2, gy); gctx.lineTo(gx+GW/2, gy+GH);
+  gctx.stroke(); gctx.setLineDash([]);
+
+  // Paddles
+  gctx.fillStyle = GREEN;
+  gctx.fillRect(gx + 4, pong.p1Y - padH/2, padW, padH);
+  gctx.fillRect(gx + GW - padW - 4, pong.p2Y - padH/2, padW, padH);
+
+  // Ball (cube wireframe mini)
+  const bs = 14;
+  gctx.strokeRect(pong.ballX - bs/2, pong.ballY - bs/2, bs, bs);
+  gctx.beginPath();
+  gctx.moveTo(pong.ballX - bs/2, pong.ballY - bs/2);
+  gctx.lineTo(pong.ballX + bs/2, pong.ballY + bs/2);
+  gctx.moveTo(pong.ballX + bs/2, pong.ballY - bs/2);
+  gctx.lineTo(pong.ballX - bs/2, pong.ballY + bs/2);
+  gctx.stroke();
+
+  // Year label
+  gctx.font = `bold 48px 'VT323'`;
+  gctx.fillStyle = GREEN;
+  gctx.textAlign = 'center';
+  gctx.fillText('1972', W/2, gy - 20);
+  gctx.font = `24px 'VT323'`;
+  gctx.fillText('PONG', W/2, gy + GH + 36);
+
+  gctx.restore();
+}
+
+function drawSpaceInvaders(alpha, t) {
+  const GCX = W/2, baseY = H*0.75;
+  gctx.save();
+  gctx.globalAlpha = alpha;
+  gctx.fillStyle = GREEN;
+  gctx.strokeStyle = GREEN;
+  gctx.shadowColor = GREEN;
+  gctx.shadowBlur = 6;
+
+  // Move invaders
+  const wave = Math.sin(t * 0.001) * 30;
+
+  invaders.grid.forEach(inv => {
+    if (!inv.alive) return;
+    const ix = inv.x + wave;
+    // Draw invader shape
+    gctx.font = `20px 'Share Tech Mono'`;
+    gctx.textAlign = 'center';
+    gctx.fillText(Math.floor(t/300)%2 === 0 ? 'ψ' : 'Ψ', ix, inv.y);
+  });
+
+  // Shooter
+  gctx.fillRect(GCX - 20, baseY, 40, 10);
+  gctx.fillRect(GCX - 5, baseY - 10, 10, 12);
+
+  // Bullet
+  invaders.t = (invaders.t || 0) + 1;
+  if (invaders.bulletY < 0) { invaders.bulletY = baseY; invaders.bulletX = GCX; }
+  invaders.bulletY -= 5;
+  if (invaders.bulletY < 50) invaders.bulletY = -1;
+  if (invaders.bulletY > 0) {
+    gctx.fillRect(invaders.bulletX - 2, invaders.bulletY, 4, 12);
+    // hit check
+    invaders.grid.forEach(inv => {
+      if (!inv.alive) return;
+      if (Math.abs(inv.x + wave - invaders.bulletX) < 20 && Math.abs(inv.y - invaders.bulletY) < 20) {
+        inv.alive = false; invaders.bulletY = -1;
+      }
+    });
+  }
+
+  gctx.font = `bold 48px 'VT323'`;
+  gctx.textAlign = 'center';
+  gctx.fillText('1978', W/2, 30);
+  gctx.font = `24px 'VT323'`;
+  gctx.fillText('SPACE INVADERS', W/2, H - 30);
+
+  gctx.restore();
+}
+
+function drawPacman(alpha, t) {
+  pacman.t += 1;
+  const speed = 2.5;
+  pacman.x += speed * pacman.dir;
+  if (pacman.x > W*0.85) pacman.dir = -1;
+  if (pacman.x < W*0.15) pacman.dir = 1;
+  pacman.angle = 0.15 + Math.abs(Math.sin(pacman.t * 0.15)) * 0.35;
+
+  // eat dots
+  pacman.dots.forEach(d => {
+    if (!d.eaten && Math.abs(d.x - pacman.x) < 16) d.eaten = true;
+  });
+
+  gctx.save();
+  gctx.globalAlpha = alpha;
+  gctx.fillStyle = GREEN;
+  gctx.strokeStyle = GREEN;
+  gctx.shadowColor = GREEN;
+  gctx.shadowBlur = 8;
+
+  // dots
+  pacman.dots.forEach(d => {
+    if (d.eaten) return;
+    gctx.beginPath();
+    gctx.arc(d.x, pacman.y, 4, 0, Math.PI*2);
+    gctx.fill();
+  });
+
+  // pacman
+  const startAngle = pacman.dir === 1 ? pacman.angle : Math.PI + pacman.angle;
+  const endAngle   = pacman.dir === 1 ? Math.PI*2 - pacman.angle : Math.PI*3 - pacman.angle;
+  gctx.beginPath();
+  gctx.moveTo(pacman.x, pacman.y);
+  gctx.arc(pacman.x, pacman.y, 22, startAngle, endAngle);
+  gctx.closePath();
+  gctx.fill();
+
+  // ghost
+  const gx2 = pacman.x - pacman.dir * 80;
+  gctx.beginPath();
+  gctx.arc(gx2, pacman.y, 20, Math.PI, 0);
+  gctx.lineTo(gx2 + 20, pacman.y + 24);
+  gctx.lineTo(gx2 + 10, pacman.y + 16);
+  gctx.lineTo(gx2, pacman.y + 24);
+  gctx.lineTo(gx2 - 10, pacman.y + 16);
+  gctx.lineTo(gx2 - 20, pacman.y + 24);
+  gctx.closePath();
+  gctx.stroke();
+
+  gctx.font = `bold 48px 'VT323'`;
+  gctx.textAlign = 'center';
+  gctx.fillText('1980', W/2, H*0.25);
+  gctx.font = `24px 'VT323'`;
+  gctx.fillText('PAC-MAN', W/2, H*0.85);
+
+  gctx.restore();
+}
+
+function drawMario(alpha) {
+  mario.t++;
+  mario.x += 1.8;
+  if (mario.x > W * 0.85) mario.x = W * 0.15;
+
+  const groundY = H * 0.65;
+
+  if (mario.onGround && Math.random() < 0.008) {
+    mario.jumpV = -10;
+    mario.onGround = false;
+  }
+  if (!mario.onGround) {
+    mario.jumpV += 0.5;
+    mario.jumpY += mario.jumpV;
+    if (mario.jumpY >= 0) { mario.jumpY = 0; mario.onGround = true; mario.jumpV = 0; }
+  }
+  const py = groundY + mario.jumpY;
+
+  mario.coins.forEach(c => { if (!c.collected && Math.abs(c.x - mario.x) < 20 && mario.jumpY < -20) c.collected = true; });
+
+  gctx.save();
+  gctx.globalAlpha = alpha;
+  gctx.fillStyle = GREEN;
+  gctx.strokeStyle = GREEN;
+  gctx.shadowColor = GREEN;
+  gctx.shadowBlur = 6;
+
+  // Ground
+  gctx.fillRect(0, groundY + 10, W, 4);
+
+  // Pipes
+  [W*0.4, W*0.7].forEach(px => {
+    gctx.strokeRect(px - 18, groundY - 60, 36, 70);
+    gctx.strokeRect(px - 22, groundY - 65, 44, 12);
+  });
+
+  // Blocks
+  [W*0.3, W*0.45, W*0.6].forEach(bx => {
+    gctx.strokeRect(bx - 14, groundY - 120, 28, 28);
+    gctx.font = `16px 'Share Tech Mono'`;
+    gctx.textAlign = 'center';
+    gctx.fillText('?', bx, groundY - 102);
+  });
+
+  // Coins
+  mario.coins.forEach(c => {
+    if (c.collected) return;
+    gctx.beginPath();
+    gctx.arc(c.x, groundY - 140, 8, 0, Math.PI*2);
+    gctx.stroke();
+  });
+
+  // Mario character (simple shape)
+  gctx.fillRect(mario.x - 10, py - 36, 20, 18); // body
+  gctx.fillRect(mario.x - 8, py - 48, 16, 14);  // head
+  gctx.fillRect(mario.x - 12, py - 18, 24, 12); // legs
+
+  gctx.font = `bold 48px 'VT323'`;
+  gctx.textAlign = 'center';
+  gctx.fillText('1985', W/2, H*0.15);
+  gctx.font = `24px 'VT323'`;
+  gctx.fillText('SUPER MARIO BROS', W/2, H*0.88);
+
+  gctx.restore();
+}
+
+function drawTetris(alpha) {
+  tetris.t++;
+  const bw = 28, bh = 28;
+  const cols = 10, rows = 18;
+  const ox = W/2 - cols*bw/2, oy = H/2 - rows*bh/2;
+
+  if (tetris.t % 20 === 0 && tetris.piece) {
+    tetris.piece.y++;
+    if (tetris.piece.y + tetris.piece.shape.length >= rows) {
+      tetris.piece.shape.forEach((row, r) => row.forEach((c, col) => {
+        if (c && tetris.board[tetris.piece.y + r]) tetris.board[tetris.piece.y + r][tetris.piece.x + col] = 1;
+      }));
+      // clear full rows
+      tetris.board = tetris.board.filter(r => !r.every(c => c));
+      while (tetris.board.length < rows) tetris.board.unshift(Array(cols).fill(0));
+      const shapes = [[[1,1,1,1]],[[1,1],[1,1]],[[1,1,1],[0,1,0]],[[1,1,0],[0,1,1]],[[0,1,1],[1,1,0]]];
+      const s = shapes[Math.floor(Math.random()*shapes.length)];
+      tetris.piece = { x: Math.floor(cols/2) - 1, y: 0, shape: s };
+    }
+  }
+
+  gctx.save();
+  gctx.globalAlpha = alpha;
+  gctx.strokeStyle = GREEN;
+  gctx.fillStyle = 'rgba(0,255,65,0.15)';
+  gctx.shadowColor = GREEN;
+  gctx.shadowBlur = 4;
+
+  // Board
+  gctx.strokeRect(ox - 2, oy - 2, cols*bw + 4, rows*bh + 4);
+  tetris.board.forEach((row, r) => row.forEach((c, col) => {
+    if (c) {
+      gctx.fillRect(ox + col*bw + 1, oy + r*bh + 1, bw - 2, bh - 2);
+      gctx.strokeRect(ox + col*bw + 1, oy + r*bh + 1, bw - 2, bh - 2);
+    }
+  }));
+
+  // Active piece
+  if (tetris.piece) {
+    gctx.fillStyle = 'rgba(0,255,65,0.5)';
+    tetris.piece.shape.forEach((row, r) => row.forEach((c, col) => {
+      if (c) {
+        gctx.fillRect(ox + (tetris.piece.x+col)*bw + 1, oy + (tetris.piece.y+r)*bh + 1, bw-2, bh-2);
+        gctx.strokeRect(ox + (tetris.piece.x+col)*bw + 1, oy + (tetris.piece.y+r)*bh + 1, bw-2, bh-2);
+      }
+    }));
+  }
+
+  gctx.fillStyle = GREEN;
+  gctx.font = `bold 48px 'VT323'`;
+  gctx.textAlign = 'center';
+  gctx.fillText('1989', W/2, oy - 20);
+  gctx.font = `24px 'VT323'`;
+  gctx.fillText('TETRIS', W/2, oy + rows*bh + 36);
+
+  gctx.restore();
+}
+
+function drawGenericGame(game, alpha, t) {
+  gctx.save();
+  gctx.globalAlpha = alpha;
+  gctx.fillStyle = GREEN;
+  gctx.strokeStyle = GREEN;
+  gctx.shadowColor = GREEN;
+  gctx.shadowBlur = 10;
+  gctx.textAlign = 'center';
+
+  // Decorative scanline grid
+  for (let y = H*0.2; y < H*0.8; y += 40) {
+    gctx.globalAlpha = alpha * 0.08;
+    gctx.beginPath(); gctx.moveTo(0, y); gctx.lineTo(W, y); gctx.stroke();
+  }
+  for (let x = W*0.1; x < W*0.9; x += 60) {
+    gctx.beginPath(); gctx.moveTo(x, H*0.2); gctx.lineTo(x, H*0.8); gctx.stroke();
+  }
+
+  gctx.globalAlpha = alpha;
+  // Pulse ring
+  const pulse = Math.sin(t * 0.003) * 20;
+  gctx.beginPath();
+  gctx.arc(W/2, H/2, 80 + pulse, 0, Math.PI*2);
+  gctx.lineWidth = 2;
+  gctx.stroke();
+  gctx.beginPath();
+  gctx.arc(W/2, H/2, 120 + pulse*0.5, 0, Math.PI*2);
+  gctx.globalAlpha = alpha * 0.4;
+  gctx.stroke();
+
+  gctx.globalAlpha = alpha;
+  gctx.font = `bold 72px 'VT323'`;
+  gctx.fillText(game.year, W/2, H/2 - 20);
+  gctx.font = `bold 32px 'VT323'`;
+  gctx.fillText(game.name, W/2, H/2 + 30);
+
+  gctx.restore();
+}
+
+function drawWargames(alpha, t) {
+  if (!wargamesLines.length || t - wargamesTimer > 180) {
+    wargamesLines = [];
+    wargamesTimer = t;
+  }
+  const lines = [
+    'GREETINGS PROFESSOR FALKEN.',
+    '',
+    'SHALL WE PLAY A GAME?',
+    '',
+    '> CHESS',
+    '> POKER',
+    '> GLOBAL THERMONUCLEAR WAR',
+    '',
+    '_ '
+  ];
+  const shown = Math.min(lines.length, Math.floor((t - wargamesTimer) / 12) + 1);
+
+  gctx.save();
+  gctx.globalAlpha = alpha;
+  gctx.fillStyle = GREEN;
+  gctx.shadowColor = GREEN;
+  gctx.shadowBlur = 8;
+  gctx.font = `32px 'VT323'`;
+  gctx.textAlign = 'left';
+
+  const ox = W * 0.2, oy = H * 0.3;
+  lines.slice(0, shown).forEach((line, i) => {
+    const displayLine = (i === shown - 1 && Math.floor(t / 30) % 2 === 0) ? line + '█' : line;
+    gctx.fillText(displayLine, ox, oy + i * 38);
+  });
+
+  gctx.restore();
+}
+
+// ============================================================
+// MAIN ANIMATION LOOP
+// ============================================================
+let t = 0;
+let gameT = 0;
+let currentGameAlpha = 0;
+let matrixAlpha = 0;
+let cubeAlpha = 1;
+let currentGame = null;
+let gameIndex = -1;
+let gameDuration = 0;
+let gameStart = 0;
+
+function nextGame() {
+  gameIndex++;
+  if (gameIndex >= GAMES.length) {
+    // Loop back
+    gameIndex = 0;
+    // reset all invaders
+  }
+  currentGame = GAMES[gameIndex];
+  initGame(currentGame.type);
+  gameDuration = rand(4000, 7000);
+  gameStart = t;
+}
+
+function loop() {
+  t++;
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = BG;
+  ctx.fillRect(0, 0, W, H);
+
+  gctx.clearRect(0, 0, W, H);
+
+  // Auto-spin cube (only when not dragging)
+  if (!isDragging) {
+    rotX += spinX;
+    rotY += spinY;
+    rotZ += spinZ;
+  }
+
+  // STATE MACHINE
+  if (state === SEQ.IDLE) {
+    stateTimer++;
+    cubeAlpha = 1;
+    matrixAlpha = 0;
+    currentGameAlpha = 0;
+    drawCube(cx, cy, cubeSize, cubeAlpha);
+    if (stateTimer * 16 > stateTarget) {
+      state = SEQ.MATRIX;
+      stateTimer = 0;
+      stateTarget = rand(3000, 5000);
+      initMatrix();
+    }
+
+  } else if (state === SEQ.MATRIX) {
+    stateTimer++;
+    matrixAlpha = Math.min(1, stateTimer / 60);
+    cubeAlpha = Math.max(0, 1 - stateTimer / 40);
+
+    if (cubeAlpha > 0) drawCube(cx, cy, cubeSize, cubeAlpha);
+    drawMatrix(matrixAlpha);
+
+    if (stateTimer * 16 > stateTarget) {
+      state = SEQ.WARGAMES;
+      stateTimer = 0;
+      stateTarget = rand(4000, 6000);
+      wargamesLines = [];
+      wargamesTimer = 0;
+    }
+
+  } else if (state === SEQ.WARGAMES) {
+    stateTimer++;
+    matrixAlpha = Math.max(0.1, 1 - stateTimer / 80);
+    drawMatrix(matrixAlpha * 0.3);
+    drawWargames(Math.min(1, stateTimer / 30), stateTimer);
+
+    if (stateTimer * 16 > stateTarget) {
+      state = SEQ.GAME;
+      stateTimer = 0;
+      currentGameAlpha = 0;
+      nextGame();
+    }
+
+  } else if (state === SEQ.GAME) {
+    stateTimer++;
+    gameT++;
+    currentGameAlpha = Math.min(1, stateTimer / 60);
+
+    // Draw faint matrix bg
+    if (Math.random() < 0.3) drawMatrix(0.08);
+
+    // Draw current game
+    gctx.clearRect(0, 0, W, H);
+    if (currentGame) {
+      const type = currentGame.type;
+      if (type === 'pong') drawPong(currentGameAlpha);
+      else if (type === 'spaceinvaders') drawSpaceInvaders(currentGameAlpha, gameT);
+      else if (type === 'pacman') drawPacman(currentGameAlpha, gameT);
+      else if (type === 'mario') drawMario(currentGameAlpha);
+      else if (type === 'tetris') drawTetris(currentGameAlpha);
+      else drawGenericGame(currentGame, currentGameAlpha, gameT);
+    }
+
+    // Transition to next game
+    if (stateTimer * 16 > gameDuration) {
+      if (gameIndex >= GAMES.length - 1) {
+        // Sequence done — go back to idle
+        state = SEQ.FADE;
+        stateTimer = 0;
+      } else {
+        // Fade between games
+        currentGameAlpha = Math.max(0, 1 - (stateTimer * 16 - gameDuration) / 800);
+        if (currentGameAlpha <= 0) {
+          nextGame();
+          stateTimer = 0;
+        }
+      }
+    }
+
+  } else if (state === SEQ.FADE) {
+    stateTimer++;
+    const fadeOut = Math.max(0, 1 - stateTimer / 90);
+    if (currentGame) drawGenericGame(currentGame, fadeOut, gameT);
+    if (fadeOut <= 0) {
+      state = SEQ.IDLE;
+      stateTimer = 0;
+      stateTarget = rand(5000, 12000);
+      cubeAlpha = 0;
+    }
+    // Fade cube back in
+    cubeAlpha = Math.min(1, stateTimer / 90);
+    if (cubeAlpha > 0) drawCube(cx, cy, cubeSize, cubeAlpha);
+  }
+
+  requestAnimationFrame(loop);
+}
+
+loop();
+</script>
+</body>
+</html>

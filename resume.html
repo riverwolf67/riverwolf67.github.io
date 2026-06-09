@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>riverwolf67 // resume</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=VT323&display=swap');
+
+  :root {
+    --green: #00ff41;
+    --green-dim: #00cc33;
+    --green-dark: #003300;
+    --green-glow: rgba(0,255,65,0.12);
+    --bg: #000000;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--bg);
+    color: var(--green);
+    font-family: 'Share Tech Mono', monospace;
+    min-height: 100vh;
+    padding: 2rem;
+    max-width: 860px;
+    margin: 0 auto;
+    line-height: 1.7;
+  }
+
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,255,65,0.02) 2px, rgba(0,255,65,0.02) 4px);
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  header {
+    border-bottom: 1px solid var(--green-dark);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .back {
+    font-size: 0.75rem;
+    color: var(--green-dark);
+    text-decoration: none;
+    letter-spacing: 0.2em;
+    display: inline-block;
+    margin-bottom: 1.5rem;
+    transition: color 0.2s;
+  }
+  .back:hover { color: var(--green); }
+
+  h1 {
+    font-family: 'VT323', monospace;
+    font-size: 3rem;
+    letter-spacing: 0.1em;
+    text-shadow: 0 0 20px var(--green);
+    margin-bottom: 0.2rem;
+  }
+
+  .subtitle {
+    font-size: 0.8rem;
+    color: var(--green-dim);
+    letter-spacing: 0.3em;
+  }
+
+  .prompt {
+    color: var(--green-dark);
+    margin-right: 0.5rem;
+    user-select: none;
+  }
+
+  section {
+    margin-bottom: 2.5rem;
+  }
+
+  h2 {
+    font-family: 'VT323', monospace;
+    font-size: 1.6rem;
+    letter-spacing: 0.2em;
+    border-left: 3px solid var(--green);
+    padding-left: 0.8rem;
+    margin-bottom: 1.2rem;
+    text-shadow: 0 0 10px var(--green-glow);
+  }
+
+  .tag-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .tag {
+    font-size: 0.75rem;
+    border: 1px solid var(--green-dark);
+    padding: 0.2rem 0.6rem;
+    letter-spacing: 0.1em;
+    color: var(--green-dim);
+    transition: all 0.2s;
+  }
+  .tag:hover {
+    border-color: var(--green);
+    color: var(--green);
+    box-shadow: 0 0 8px var(--green-glow);
+  }
+  .tag.primary {
+    border-color: var(--green-dim);
+    color: var(--green);
+  }
+
+  .entry {
+    margin-bottom: 1.4rem;
+    padding-left: 1rem;
+    border-left: 1px solid var(--green-dark);
+  }
+
+  .entry-title {
+    font-size: 0.95rem;
+    color: var(--green);
+    margin-bottom: 0.2rem;
+  }
+
+  .entry-meta {
+    font-size: 0.72rem;
+    color: var(--green-dark);
+    margin-bottom: 0.4rem;
+    letter-spacing: 0.1em;
+  }
+
+  .entry p {
+    font-size: 0.8rem;
+    color: var(--green-dim);
+    line-height: 1.6;
+  }
+
+  ul.bullets {
+    list-style: none;
+    padding: 0;
+  }
+  ul.bullets li {
+    font-size: 0.8rem;
+    color: var(--green-dim);
+    padding: 0.2rem 0;
+  }
+  ul.bullets li::before {
+    content: '> ';
+    color: var(--green-dark);
+  }
+
+  .stub-notice {
+    font-size: 0.72rem;
+    color: var(--green-dark);
+    border: 1px dashed var(--green-dark);
+    padding: 0.6rem 1rem;
+    margin-top: 2rem;
+    letter-spacing: 0.1em;
+  }
+
+  footer {
+    margin-top: 3rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--green-dark);
+    font-size: 0.72rem;
+    color: var(--green-dark);
+    letter-spacing: 0.15em;
+    text-align: center;
+  }
+
+  a { color: var(--green-dim); text-decoration: none; }
+  a:hover { color: var(--green); }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="index.html" class="back">← [ back ]</a>
+  <h1><span class="prompt">//</span>riverwolf67</h1>
+  <div class="subtitle">INFRASTRUCTURE · DEVOPS · OPEN SOURCE · HOMELAB</div>
+</header>
+
+<section>
+  <h2>[ PROFILE ]</h2>
+  <p style="font-size:0.85rem; color:var(--green-dim);">
+    Hands-on Linux and infrastructure practitioner with deep experience in homelab operations,
+    DevOps tooling, CI/CD automation, and agentic AI architecture. Passionate about open-source,
+    self-hosted infrastructure, and building things that work reliably at any scale.
+  </p>
+</section>
+
+<section>
+  <h2>[ TECH STACK ]</h2>
+
+  <div class="entry-meta" style="margin-bottom:0.6rem;">// INFRASTRUCTURE</div>
+  <div class="tag-cloud">
+    <span class="tag primary">Proxmox VE</span>
+    <span class="tag primary">Ceph Storage</span>
+    <span class="tag primary">Linux</span>
+    <span class="tag">KVM / QEMU</span>
+    <span class="tag">Terraform</span>
+    <span class="tag">Packer</span>
+    <span class="tag">cloud-init</span>
+    <span class="tag">NixOS</span>
+    <span class="tag">CachyOS</span>
+    <span class="tag">Raspberry Pi</span>
+  </div>
+
+  <div class="entry-meta" style="margin-bottom:0.6rem; margin-top:1rem;">// DEVOPS & CI/CD</div>
+  <div class="tag-cloud">
+    <span class="tag primary">GitHub Actions</span>
+    <span class="tag primary">Docker</span>
+    <span class="tag primary">Docker Compose</span>
+    <span class="tag">Git</span>
+    <span class="tag">Bash</span>
+    <span class="tag">nftables</span>
+    <span class="tag">dnsmasq</span>
+    <span class="tag">VLANs</span>
+  </div>
+
+  <div class="entry-meta" style="margin-bottom:0.6rem; margin-top:1rem;">// DEVELOPMENT</div>
+  <div class="tag-cloud">
+    <span class="tag primary">Node.js</span>
+    <span class="tag primary">JavaScript</span>
+    <span class="tag">Python</span>
+    <span class="tag">React</span>
+    <span class="tag">Express</span>
+    <span class="tag">SSE</span>
+    <span class="tag">Three.js</span>
+    <span class="tag">WebGL</span>
+    <span class="tag">HTML/CSS</span>
+  </div>
+
+  <div class="entry-meta" style="margin-bottom:0.6rem; margin-top:1rem;">// AI & AGENTIC</div>
+  <div class="tag-cloud">
+    <span class="tag primary">Claude / Anthropic API</span>
+    <span class="tag primary">MCP (Model Context Protocol)</span>
+    <span class="tag">Agentic Architecture</span>
+    <span class="tag">RAG Pipelines</span>
+    <span class="tag">PostHog</span>
+  </div>
+</section>
+
+<section>
+  <h2>[ PROJECTS ]</h2>
+
+  <div class="entry">
+    <div class="entry-title">proxmox-ci</div>
+    <div class="entry-meta">GitHub Actions · Terraform · Packer · Proxmox VE // v1.0.1</div>
+    <p>CI/CD pipeline for automated Proxmox VM provisioning. Multi-distro Packer support (Ubuntu, Debian, Rocky, Arch, NixOS), cloud-init ISO automation, structured CI log output, versioned ZIP artifacts with manifest files, and GitHub release publishing.</p>
+  </div>
+
+  <div class="entry">
+    <div class="entry-title">CloudTwin</div>
+    <div class="entry-meta">Apache CloudStack · Proxmox VE · AWS Outposts</div>
+    <p>Cloud digital twin platform visualizing multi-vendor infrastructure with layered topology views, role-based perspectives, and an embedded AI terminal for operational insight.</p>
+  </div>
+
+  <div class="entry">
+    <div class="entry-title">EXO Digital Pet // exoclaw.dev</div>
+    <div class="entry-meta">Node.js · Express · SSE · Docker // v1.0.0</div>
+    <p>Self-hostable digital companion with a five-stage adaptive personality system (LARVA → SENTINEL), animated SVG sprites, and a full server kit including Docker Compose, git webhook integration, and SSE-based live updates.</p>
+  </div>
+
+  <div class="entry">
+    <div class="entry-title">dotfiles-bootstrap</div>
+    <div class="entry-meta">Bash · Zsh · Fish</div>
+    <p>Modular shell configuration repo. Curl-installable from GitHub with .env customization support for instant environment setup across machines.</p>
+  </div>
+
+  <div class="entry">
+    <div class="entry-title">Homelab Infrastructure</div>
+    <div class="entry-meta">Proxmox · Ceph · Raspberry Pi · nftables</div>
+    <p>Three-node Proxmox cluster with Ceph storage backend, self-hosted GitHub Actions runners, multi-VLAN network with Raspberry Pi router running nftables + dnsmasq.</p>
+  </div>
+</section>
+
+<section>
+  <h2>[ EXPERIENCE ]</h2>
+
+  <div class="entry">
+    <div class="entry-title">// STUB — FULL RESUME COMING SOON</div>
+    <div class="entry-meta">[ placeholder ]</div>
+    <ul class="bullets">
+      <li>Infrastructure & DevOps Engineering</li>
+      <li>Linux Systems Administration</li>
+      <li>CI/CD Pipeline Design & Automation</li>
+      <li>Open-source project development & maintenance</li>
+      <li>Agentic AI integration & architecture</li>
+      <li>Homelab design & self-hosted services</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>[ LINKS ]</h2>
+  <ul class="bullets">
+    <li><a href="https://github.com/riverwolf67" target="_blank">github.com/riverwolf67</a></li>
+    <li><a href="https://exoclaw.dev" target="_blank">exoclaw.dev</a></li>
+    <li>more coming soon...</li>
+  </ul>
+</section>
+
+<div class="stub-notice">
+  // STUB PAGE — work in progress. Full resume, project showcase, and blog links will be added.
+</div>
+
+<footer>
+  riverwolf67 · exoclaw.dev · built with hacker theme + custom JS
+</footer>
+
+</body>
+</html>
